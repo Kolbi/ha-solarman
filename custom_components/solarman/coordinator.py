@@ -12,9 +12,16 @@ from .const import *
 
 _LOGGER = logging.getLogger(__name__)
 
+
 class InverterCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def __init__(self, hass: HomeAssistant, inverter):
-        super().__init__(hass, _LOGGER, name = inverter.name, update_interval = TIMINGS_UPDATE_INTERVAL, always_update = False)
+        super().__init__(
+            hass,
+            _LOGGER,
+            name=inverter.name,
+            update_interval=TIMINGS_UPDATE_INTERVAL,
+            always_update=False,
+        )
         self.inverter = inverter
         self._counter = -1
 
@@ -29,10 +36,10 @@ class InverterCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             async with asyncio.timeout(TIMINGS_UPDATE_TIMEOUT):
                 return await self.inverter.async_get(self._accounting())
         except Exception:
-            self._counter = -1 # Temporary fix to retrieve all data after reconnect
+            self._counter = -1  # Temporary fix to retrieve all data after reconnect
             raise
 
-    #async def _reload(self):
+    # async def _reload(self):
     #    _LOGGER.debug('_reload')
     #    await self.hass.services.async_call("homeassistant", "reload_config_entry", { "entity_id": "???" }, blocking = False)
 

@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import re
-import struct
 import logging
 
 from .const import *
 from .common import *
 
 _LOGGER = logging.getLogger(__name__)
+
 
 class ParameterParser:
     def __init__(self, parameter_definition):
@@ -26,28 +26,57 @@ class ParameterParser:
             if "digits" in default:
                 self._digits = default["digits"]
 
-        _LOGGER.debug(f"Default update_interval: {self._update_interval}, min_span: {self._min_span}, digits: {self._digits}")
+        _LOGGER.debug(
+            f"Default update_interval: {self._update_interval}, min_span: {self._min_span}, digits: {self._digits}"
+        )
 
     def lookup(self):
         return self._lookups["parameters"]
 
     def is_valid(self, parameters):
-        return "name" in parameters and "rule" in parameters # and "registers" in parameters
+        return (
+            "name" in parameters and "rule" in parameters
+        )  # and "registers" in parameters
 
     def is_enabled(self, parameters):
-        return not "disabled" in parameters
+        return "disabled" not in parameters
 
     def is_sensor(self, parameters):
-        return self.is_valid(parameters) and not "attribute" in parameters
+        return self.is_valid(parameters) and "attribute" not in parameters
 
     def is_requestable(self, parameters):
-        return self.is_valid(parameters) and self.is_enabled(parameters) and parameters["rule"] > 0
+        return (
+            self.is_valid(parameters)
+            and self.is_enabled(parameters)
+            and parameters["rule"] > 0
+        )
 
     def is_scheduled(self, parameters, runtime):
-        return "realtime" in parameters or (runtime % (parameters["update_interval"] if "update_interval" in parameters else self._update_interval) == 0)
+        return "realtime" in parameters or (
+            runtime
+            % (
+                parameters["update_interval"]
+                if "update_interval" in parameters
+                else self._update_interval
+            )
+            == 0
+        )
 
     def default_from_unit_of_measurement(self, parameters):
-        return None if (uom := parameters["uom"] if "uom" in parameters else (parameters["unit_of_measurement"] if "unit_of_measurement" in parameters else "")) and re.match(r"\S+", uom) else ""
+        return (
+            None
+            if (
+                uom := parameters["uom"]
+                if "uom" in parameters
+                else (
+                    parameters["unit_of_measurement"]
+                    if "unit_of_measurement" in parameters
+                    else ""
+                )
+            )
+            and re.match(r"\S+", uom)
+            else ""
+        )
 
     def set_state(self, key, value):
         self._result[key] = {}
@@ -62,7 +91,7 @@ class ParameterParser:
 
         return result
 
-    def get_requests(self, runtime = 0):
+    def get_requests(self, runtime=0):
         if "requests" in self._lookups:
             return self._lookups["requests"]
 
@@ -78,8 +107,11 @@ class ParameterParser:
         registers.sort()
 
         groups = group_when(registers, lambda x, y: y - x > self._min_span)
-        
-        return [{ REQUEST_START: r[0], REQUEST_END: r[-1], REQUEST_CODE: 0x03 } for r in groups]
+
+        return [
+            {REQUEST_START: r[0], REQUEST_END: r[-1], REQUEST_CODE: 0x03}
+            for r in groups
+        ]
 
     def parse(self, rawData, start, length):
         for i in self.lookup():
@@ -127,7 +159,9 @@ class ParameterParser:
         try:
             self.try_parse_field(rawData, definition, start, length)
         except Exception as e:
-            _LOGGER.error(f"ParameterParser.try_parse: start: {start}, length: {length}, rawData: {rawData}, definition: {definition} [{format_exception(e)}]")
+            _LOGGER.error(
+                f"ParameterParser.try_parse: start: {start}, length: {length}, rawData: {rawData}, definition: {definition} [{format_exception(e)}]"
+            )
             raise
 
         return
@@ -224,8 +258,14 @@ class ParameterParser:
 
         if "sensors" in definition:
             for s in definition["sensors"]:
-                if (n := (self._read_registers(rawData, s, start, length) if not "signed" in s else self._read_registers_signed(rawData, s, start, length))) is not None:
-                    if not "subtract" in s:
+                if (
+                    n := (
+                        self._read_registers(rawData, s, start, length)
+                        if "signed" not in s
+                        else self._read_registers_signed(rawData, s, start, length)
+                    )
+                ) is not None:
+                    if "subtract" not in s:
                         value += n
                     else:
                         value -= n
@@ -247,7 +287,15 @@ class ParameterParser:
                     if not self.do_validate(key, value, definition["validation"]):
                         return
 
-                self.set_state(key, get_number(value, definition["digits"] if "digits" in definition else self._digits))
+                self.set_state(
+                    key,
+                    get_number(
+                        value,
+                        definition["digits"]
+                        if "digits" in definition
+                        else self._digits,
+                    ),
+                )
 
         return
 
@@ -263,12 +311,18 @@ class ParameterParser:
                 if not self.do_validate(key, value, definition["validation"]):
                     return
 
-            self.set_state(key, get_number(value, definition["digits"] if "digits" in definition else self._digits))
+            self.set_state(
+                key,
+                get_number(
+                    value,
+                    definition["digits"] if "digits" in definition else self._digits,
+                ),
+            )
 
         return
 
     def try_parse_ascii(self, rawData, definition, start, length):
-        key = definition["name"]         
+        key = definition["name"]
         found = True
         value = ""
 
@@ -283,10 +337,10 @@ class ParameterParser:
         if found:
             self.set_state(key, value)
 
-        return  
-    
+        return
+
     def try_parse_bits(self, rawData, definition, start, length):
-        key = definition["name"]         
+        key = definition["name"]
         found = True
         value = []
 
@@ -301,8 +355,8 @@ class ParameterParser:
         if found:
             self.set_state(key, value)
 
-        return 
-    
+        return
+
     def try_parse_version(self, rawData, definition, start, length):
         key = definition["name"]
         found = True
@@ -312,7 +366,16 @@ class ParameterParser:
             index = r - start
             if (index >= 0) and (index < length):
                 temp = rawData[index]
-                value = value + str(temp >> 12) + "." +  str(temp >> 8 & 0x0F) + "." + str(temp >> 4 & 0x0F) + "." + str(temp & 0x0F)
+                value = (
+                    value
+                    + str(temp >> 12)
+                    + "."
+                    + str(temp >> 8 & 0x0F)
+                    + "."
+                    + str(temp >> 4 & 0x0F)
+                    + "."
+                    + str(temp & 0x0F)
+                )
             else:
                 found = False
 
@@ -322,25 +385,25 @@ class ParameterParser:
         return
 
     def try_parse_datetime(self, rawData, definition, start, length):
-        key = definition["name"]         
+        key = definition["name"]
         found = True
         value = ""
 
         print("start: ", start)
 
-        for i,r in enumerate(definition["registers"]):
+        for i, r in enumerate(definition["registers"]):
             index = r - start
-            print ("index: ",index)
+            print("index: ", index)
             if (index >= 0) and (index < length):
                 temp = rawData[index]
-                if(i==0):
-                    value = value + str(temp >> 8)  + "/" + str(temp & 0xFF) + "/"
-                elif (i==1):
-                    value = value + str(temp >> 8)  + " " + str(temp & 0xFF) + ":"
-                elif(i==2):
-                    value = value + str(temp >> 8)  + ":" + str(temp & 0xFF)
+                if i == 0:
+                    value = value + str(temp >> 8) + "/" + str(temp & 0xFF) + "/"
+                elif i == 1:
+                    value = value + str(temp >> 8) + " " + str(temp & 0xFF) + ":"
+                elif i == 2:
+                    value = value + str(temp >> 8) + ":" + str(temp & 0xFF)
                 else:
-                    value = value + str(temp >> 8)  + str(temp & 0xFF)
+                    value = value + str(temp >> 8) + str(temp & 0xFF)
             else:
                 found = False
 
@@ -350,7 +413,7 @@ class ParameterParser:
         return
 
     def try_parse_time(self, rawData, definition, start, length):
-        key = definition["name"]         
+        key = definition["name"]
         found = True
         value = ""
 
@@ -358,7 +421,11 @@ class ParameterParser:
             index = r - start
             if (index >= 0) and (index < length):
                 temp = rawData[index]
-                value = str("{:02d}".format(int(temp / 100))) + ":" + str("{:02d}".format(int(temp % 100)))
+                value = (
+                    str("{:02d}".format(int(temp / 100)))
+                    + ":"
+                    + str("{:02d}".format(int(temp % 100)))
+                )
             else:
                 found = False
 
@@ -376,7 +443,7 @@ class ParameterParser:
             index = r - start
             if (index >= 0) and (index < length):
                 temp = rawData[index]
-                value.append((temp))
+                value.append(temp)
             else:
                 found = False
 

@@ -33,7 +33,7 @@ parameters:
             "LV 3-Phase Hybrid Inverter",
             "HV 3-Phase Hybrid Inverter",
             "HV 3-Phase Inverter 6-15kw",
-            "HV 3-Phase Inverter 20-50kw"
+            "HV 3-Phase Inverter 20-50kw",
           ]
         lookup:
           - key: 0x0200
@@ -923,7 +923,7 @@ parameters:
 
   - group: "Controls"
     items:
-      # Device - Power the Inverter On/Off 
+      # Device - Power the Inverter On/Off
       - name: ""
         update_interval: 30
         class: "switch"
@@ -954,7 +954,7 @@ parameters:
             "Inverter-Gen",
             "Grid-Generator",
             "Inv-Grid-Gen",
-            "Power Supply"
+            "Power Supply",
           ]
         lookup:
           - key: 0x0001
@@ -1018,7 +1018,7 @@ parameters:
             "Grid error",
             "Battery loss",
             "Parallel communication quality",
-            "Error"
+            "Error",
           ]
         lookup:
           - key: 0x0000
@@ -1102,7 +1102,7 @@ parameters:
             "BMS Charging Current Limit",
             "BMS Discharging Current Limit",
             "BMS Max Charging Current",
-            "BMS Max Discharging Current"
+            "BMS Max Discharging Current",
           ]
 
       # Battery - The power of battery is S16bit

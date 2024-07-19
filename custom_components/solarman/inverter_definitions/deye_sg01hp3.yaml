@@ -917,7 +917,7 @@ parameters:
 
   - group: "Controls"
     items:
-      # Device - Power the Inverter On/Off 
+      # Device - Power the Inverter On/Off
       - name: ""
         update_interval: 30
         class: "switch"
@@ -1096,7 +1096,7 @@ parameters:
             "BMS Charging Current Limit",
             "BMS Discharging Current Limit",
             "BMS Max Charging Current",
-            "BMS Max Discharging Current"
+            "BMS Max Discharging Current",
           ]
 
       # Battery - The power of battery is S16bit

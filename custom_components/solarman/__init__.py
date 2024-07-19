@@ -16,6 +16,7 @@ from .services import *
 
 _LOGGER = logging.getLogger(__name__)
 
+
 async def async_setup_entry(hass: HomeAssistant, config: ConfigEntry) -> bool:
     _LOGGER.debug(f"async_setup_entry({config.as_dict()})")
 
@@ -43,15 +44,30 @@ async def async_setup_entry(hass: HomeAssistant, config: ConfigEntry) -> bool:
     inverter_mac = await inverter_discovery.get_mac()
 
     if inverter_host is None:
-        raise vol.Invalid("Configuration parameter [inverter_host] does not have a value")
+        raise vol.Invalid(
+            "Configuration parameter [inverter_host] does not have a value"
+        )
     if inverter_serial is None:
-        raise vol.Invalid("Configuration parameter [inverter_serial] does not have a value")
+        raise vol.Invalid(
+            "Configuration parameter [inverter_serial] does not have a value"
+        )
     if inverter_port is None:
-        raise vol.Invalid("Configuration parameter [inverter_port] does not have a value")
+        raise vol.Invalid(
+            "Configuration parameter [inverter_port] does not have a value"
+        )
     if not inverter_mb_slave_id:
         inverter_mb_slave_id = DEFAULT_INVERTER_MB_SLAVE_ID
 
-    inverter = Inverter(inverter_host, inverter_serial, inverter_port, inverter_mb_slave_id, name, inverter_mac, lookup_path, lookup_file)
+    inverter = Inverter(
+        inverter_host,
+        inverter_serial,
+        inverter_port,
+        inverter_mb_slave_id,
+        name,
+        inverter_mac,
+        lookup_path,
+        lookup_file,
+    )
 
     await inverter.load()
 
@@ -67,7 +83,7 @@ async def async_setup_entry(hass: HomeAssistant, config: ConfigEntry) -> bool:
     # If you do not want to retry setup on failure, use
     # coordinator.async_refresh() instead.
     #
-    _LOGGER.debug(f"async_setup: coordinator.async_config_entry_first_refresh")
+    _LOGGER.debug("async_setup: coordinator.async_config_entry_first_refresh")
 
     await coordinator.async_config_entry_first_refresh()
 
@@ -80,6 +96,7 @@ async def async_setup_entry(hass: HomeAssistant, config: ConfigEntry) -> bool:
 
     register_services(hass)
     return True
+
 
 async def async_unload_entry(hass: HomeAssistant, config: ConfigEntry) -> bool:
     _LOGGER.debug(f"async_unload_entry({config.as_dict()})")

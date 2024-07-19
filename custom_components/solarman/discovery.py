@@ -14,22 +14,25 @@ from .common import *
 
 _LOGGER = logging.getLogger(__name__)
 
+
 class InverterDiscovery:
     _port = DISCOVERY_PORT
     _message = DISCOVERY_MESSAGE.encode()
 
-    def __init__(self, hass: HomeAssistant, address = None):
+    def __init__(self, hass: HomeAssistant, address=None):
         self._hass = hass
         self._address = address
         self._ip = None
         self._mac = None
         self._serial = None
 
-    async def _discover(self, address = IP_BROADCAST, source = IP_ANY):
+    async def _discover(self, address=IP_BROADCAST, source=IP_ANY):
         loop = asyncio.get_running_loop()
 
         try:
-            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) as sock:
+            with socket.socket(
+                socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP
+            ) as sock:
                 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
                 sock.setblocking(False)
@@ -43,12 +46,14 @@ class InverterDiscovery:
                 while True:
                     try:
                         recv = await loop.sock_recv(sock, DISCOVERY_RECV_MESSAGE_SIZE)
-                        data = recv.decode().split(',')
+                        data = recv.decode().split(",")
                         if len(data) == 3:
                             self._ip = data[0]
                             self._mac = data[1]
                             self._serial = int(data[2])
-                            _LOGGER.debug(f"_discover: [{self._ip}, {self._mac}, {self._serial}]")
+                            _LOGGER.debug(
+                                f"_discover: [{self._ip}, {self._mac}, {self._serial}]"
+                            )
                     except (TimeoutError, socket.timeout):
                         break
         except Exception as e:
@@ -59,14 +64,16 @@ class InverterDiscovery:
 
         for adapter in adapters:
             for ipv4 in adapter["ipv4"]:
-                net = IPv4Network(ipv4["address"] + '/' + str(ipv4["network_prefix"]), False)
+                net = IPv4Network(
+                    ipv4["address"] + "/" + str(ipv4["network_prefix"]), False
+                )
                 if net.is_loopback:
                     continue
 
                 _LOGGER.debug(f"_discover_all: Broadcasting on {net.with_prefixlen}")
 
                 await self._discover(str(IPv4Network(net, False).broadcast_address))
-                #await self._discover(IP_BROADCAST, ipv4["address"])
+                # await self._discover(IP_BROADCAST, ipv4["address"])
 
                 if self._ip is not None:
                     return None
@@ -82,7 +89,9 @@ class InverterDiscovery:
             await self._discover_all()
 
             if self._ip is None:
-                _LOGGER.debug(f"discover: {f'attempts left: {attempts_left}{'' if attempts_left > 0 else ', aborting.'}'}")
+                _LOGGER.debug(
+                    f"discover: {f'attempts left: {attempts_left}{'' if attempts_left > 0 else ', aborting.'}'}"
+                )
 
     async def get_ip(self):
         if not self._ip:
